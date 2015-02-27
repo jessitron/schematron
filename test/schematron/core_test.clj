@@ -22,6 +22,14 @@
    [k (assign-schema PassingSchema abc)]
    (is (#{:a :b :c} k))))
 
+(defn contains? [string substring]
+  (.contains string substring))
+
 (deftest negative-path
-  (let [e (is (thrown? RuntimeException
-                        (gen/sample (assign-schema FailingSchema) abc)))]))
+  (if-let [e (is (thrown? clojure.lang.ExceptionInfo
+                          (doall (gen/sample (assign-schema FailingSchema abc)))))]
+    (let [ message (.getMessage e)]
+      (is (contains? message "Generated value does not match schema") "Error message should announce cause")
+      (is (contains? message "abc") "Error message should reveal the name of the generator"))
+    )
+  )
