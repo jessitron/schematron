@@ -25,11 +25,17 @@
 (defn contains? [string substring]
   (.contains string substring))
 
+(s/defn gimme-the-name-of-this-var [v :- clojure.lang.Var]
+  (.substring (pr-str v) 2))
+
 (deftest negative-path
-  (if-let [e (is (thrown? clojure.lang.ExceptionInfo
-                          (doall (gen/sample (assign-schema FailingSchema abc)))))]
-    (let [ message (.getMessage e)]
-      (is (contains? message "Generated value does not match schema") "Error message should announce cause")
-      (is (contains? message "abc") "Error message should reveal the name of the generator"))
-    )
-  )
+  (def xyz abc)
+  (doseq [g-var [#'abc #'xyz]]
+    (let [failing-gen (assign-schema FailingSchema (deref g-var))]
+      (if-let [e (is (thrown? clojure.lang.ExceptionInfo
+                              (doall (gen/sample failing-gen))))]
+        (let [ message (.getMessage e)]
+          (is (contains? message "Generated value does not match schema")
+              "Error message should announce cause")
+          (is (contains? message (gimme-the-name-of-this-var g-var))
+              "Error message should reveal the name of the generator"))))))
