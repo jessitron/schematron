@@ -5,7 +5,8 @@
             [clojure.test.check.properties :as prop]
             [clojure.test.check.clojure-test :refer [defspec]]
             [schema.test]
-            [schema.core :as s]))
+            [schema.core :as s]
+            [schematron.gen :as mygen]))
 
 (use-fixtures :once schema.test/validate-schemas)
 
@@ -24,7 +25,7 @@
 (deftest negative-path
   (defgen failgen s/Str (gen/elements [:a :b :c]))
   (defgen garberator s/Str (gen/elements [:a :b :c]))
-  (doseq [[g n] [[failgen "failgen"] [garberator "schematron.core-test/garberator"]]]
+  (doseq [[g n] [[failgen "failgen"] [garberator "garberator"]]]
     (let [failing-gen g]
       (if-let [e (is (thrown? clojure.lang.ExceptionInfo
                               (doall (gen/sample failing-gen))))]
@@ -33,3 +34,8 @@
               "Error message should announce cause")
           (is (contains? message n)
               "Error message should reveal the name of the generator"))))))
+
+(deftest name-space-in-error
+  (if-let [e (is (thrown? clojure.lang.ExceptionInfo
+                          (doall (gen/sample mygen/banana))))]
+    (is (contains? (.getMessage e) "schematron.gen/banana"))))
