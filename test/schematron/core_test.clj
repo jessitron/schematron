@@ -9,17 +9,10 @@
 
 (use-fixtures :once schema.test/validate-schemas)
 
-
-
-(def PassingSchema s/Keyword)
-
-(def FailingSchema s/Str)
-
-(def abc (gen/elements [:a :b :c]))
-
+(defgen happy-schemaed-gen s/Keyword (gen/elements [:a :b :c]))
 (defspec happy-path
   (prop/for-all
-   [k (assign-schema PassingSchema abc)]
+   [k happy-schemaed-gen]
    (is (#{:a :b :c} k))))
 
 (defn contains? [string substring]
@@ -29,9 +22,10 @@
   (name (:name (meta v))))
 
 (deftest negative-path
-  (def xyz abc)
-  (doseq [[g n] [[abc "abc"] [xyz "xyz"]]]
-    (let [failing-gen (assign-schema FailingSchema g)]
+  (defgen failgen s/Str (gen/elements [:a :b :c]))
+  (defgen garberator s/Str (gen/elements [:a :b :c]))
+  (doseq [[g n] [[failgen "failgen"] [garberator "schematron.core-test/garberator"]]]
+    (let [failing-gen g]
       (if-let [e (is (thrown? clojure.lang.ExceptionInfo
                               (doall (gen/sample failing-gen))))]
         (let [ message (.getMessage e)]

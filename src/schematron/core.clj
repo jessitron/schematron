@@ -6,11 +6,8 @@
 
 (declare gs-validate)
 
-(s/defn assign-schema [
-                       s :- s/Schema
-                       g :- clojure.test.check.generators.Generator
-                       ]
-  (gen/fmap (partial gs-validate "abc" s) g))
+(defmacro defgen [n s g]
+  `(def ~n (gen/fmap (partial gs-validate ~(str n) ~s) ~g)))
 
 ;; good place for a parameterized schema; always returns the value.
 ;; what if the return schema could be a function of return value and all parameter values?
