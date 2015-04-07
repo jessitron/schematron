@@ -18,6 +18,9 @@
 
 (defn contains? [string substring]
   (.contains string substring))
+(s/defn message-contains? [e :- java.lang.Exception
+                           wut :- s/Str]
+  (contains? (.getMessage e) wut))
 
 (s/defn name-of [v :- clojure.lang.Var]
   (name (:name (meta v))))
@@ -40,3 +43,9 @@
 (deftest name-space-in-error
   (if-let [e (exception-during-sample mygen/banana)]
     (is (contains? (.getMessage e) "schematron.gen/banana"))))
+
+;; Error messages on defgen itself
+(deftest invalid-generator-passed
+  (if-let [e (is (thrown? Throwable
+                          (defgen foo s/Str "banana")))]
+    (is (message-contains? e "banana"))))
