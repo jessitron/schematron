@@ -1,4 +1,4 @@
-(ns schematron.core
+(ns schematron.defgen
   (:require [schema.core :as s]
             [schema.macros :as macros]
             [schema.utils :as utils]

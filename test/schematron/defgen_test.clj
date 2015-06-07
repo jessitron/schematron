@@ -1,6 +1,6 @@
-(ns schematron.core-test
+(ns schematron.defgen-test
   (:require [clojure.test :refer :all]
-            [schematron.core :refer :all]
+            [schematron.defgen :as subject]
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop]
             [clojure.test.check.clojure-test :refer [defspec]]
@@ -10,7 +10,7 @@
 
 (use-fixtures :once schema.test/validate-schemas)
 
-(defgen happy-schemaed-gen s/Keyword (gen/elements [:a :b :c]))
+(subject/defgen happy-schemaed-gen s/Keyword (gen/elements [:a :b :c]))
 (defspec happy-path
   (prop/for-all
    [k happy-schemaed-gen]
@@ -30,8 +30,8 @@
                (doall (gen/sample g)))))
 
 (deftest negative-path
-  (defgen failgen s/Str (gen/elements [:a :b :c]))
-  (defgen garberator s/Str (gen/elements [:a :b :c]))
+  (subject/defgen failgen s/Str (gen/elements [:a :b :c]))
+  (subject/defgen garberator s/Str (gen/elements [:a :b :c]))
   (doseq [failing-gen-var [#'failgen #'garberator]]
     (if-let [e (exception-during-sample @failing-gen-var)]
       (let [message (.getMessage e)]
@@ -47,5 +47,5 @@
 ;; TODO: Error messages on defgen itself
 #_(deftest invalid-generator-passed
   (if-let [e (is (thrown? Throwable
-                          (defgen foo s/Str "banana")))]
+                          (subject/defgen foo s/Str "banana")))]
     (is (message-contains? e "banana"))))
