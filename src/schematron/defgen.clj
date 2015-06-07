@@ -14,7 +14,7 @@
 (s/defn gs-validate
   "Throw a generator-specific exception if value does not satisfy schema; otherwise, return value."
   [name :- s/Str
-   schema :- s/Schema
+   schema :- (s/pred (partial satisfies? s/Schema) "is a schema")
    value]
   (when-let [error (s/check schema value)]
     (macros/error! (utils/format*
