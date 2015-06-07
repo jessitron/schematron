@@ -44,8 +44,8 @@
   (if-let [e (exception-during-sample mygen/banana)]
     (is (contains? (.getMessage e) "schematron.gen/banana"))))
 
-;; Error messages on defgen itself
-(deftest invalid-generator-passed
+;; TODO: Error messages on defgen itself
+#_(deftest invalid-generator-passed
   (if-let [e (is (thrown? Throwable
                           (defgen foo s/Str "banana")))]
     (is (message-contains? e "banana"))))
