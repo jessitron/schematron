@@ -1,9 +1,10 @@
 (ns schematron.core-test
   (:require [schematron.core :as subject]
+            [schema.test]
             [clojure.test :refer [deftest is testing]]
             [schema.core :as s]))
 
-(clojure.test/use-fixtures :once s/with-fn-validation)
+(clojure.test/use-fixtures :once schema.test/validate-schemas)
 
 (deftest literal-macro-output
   (let [expanded-code (macroexpand '(subject/defn fn-name [a :+ (subject/Delay s/Str)] "Do stuff" (println @a)))
