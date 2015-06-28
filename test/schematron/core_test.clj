@@ -35,3 +35,18 @@
                   (deref d))
     (is (= 4 (open-it (delay 4))))))
 
+(comment (deftest return-values
+           (testing "Wrapping schemas delay checks"
+             (subject/defn verify-not-realized-yet :+ (subject/Delay s/Str) []
+                           (delay 6))
+             (is (not (realized? (verify-not-realized-yet)))))
+           (testing "exception happens when schema is not met"
+             (subject/defn gimme :+ (subject/Delay s/Num) []
+                           (delay "four"))
+             (is (thrown? ExceptionInfo
+                          (deref (gimme)))))
+           (testing "no exception when schema is accurate"
+             (subject/defn gimme :+ (subject/Delay s/Num) [n]
+                           (delay n))
+             (is (= 4 (deref (gimme 4)))))))
+

@@ -16,8 +16,8 @@
                                          :outer-arg-name schema.core/Symbol
                                          :eval-for-schematron schema.core/Any})
 
-(clojure.core/defn letify [pairs]
-  (vec (apply concat pairs)))
+(clojure.core/defn flatmap-to-vector [f c]
+  (vec (apply concat (map f c))))
 (clojure.core/defn schematronned? [arg-info] (nil? (schema.core/check SchematronnedArg arg-info)))
 
 (schema.core/defn arg-with-schematron :- SchematronnedArg [arg-name schematron]

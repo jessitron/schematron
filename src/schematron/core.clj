@@ -1,13 +1,24 @@
 (ns schematron.core
   (:require [schematron.utils :refer [process-clownface-schematized-args
-                                      letify
-                                      schematronned?]]
+                                      flatmap-to-vector] :as t]
             [schema.core]))
 
 
 (defprotocol Schematron
   (nonintrusive-schema [this])
   (wrap-with-checker [this value]))
+
+(schema.core/defn call-wrap-with-checker [sam :- t/SchematronnedArg]
+  `(.wrap-with-checker ~(:schematron-instance sam) ~(:outer-arg-name sam)))
+
+(schema.core/defn apply-nonintrusive-schema [sam :- t/SchematronnedArg]
+  [(:outer-arg-name sam) :- `(.nonintrusive_schema ~(:schematron-instance sam))])
+
+(schema.core/defn conditionally [pred apply-if-yes apply-if-no]
+  (fn [a]
+    ((if (pred a)
+       apply-if-yes
+       apply-if-no) a)))
 
 (defmacro defn
   "Like schema/defn, except in addition to :- for schemas that are checked at call-time,
@@ -25,29 +36,18 @@
   (let [[before-arg-list [arg-list & body]] (split-with (complement vector?) defn-args)
         _ (when (nil? arg-list) (throw (ex-info "can't find arg list. Multi-arity not supported, yo" {:before before-arg-list})))]
     (let [arg-infos (process-clownface-schematized-args arg-list)
-          schematron-args (filter schematronned? arg-infos)
-          restore-orig-args (letify
-                              (map
-                                (fn [sam]
-                                  [(:arg-name sam)
-                                   `(.wrap-with-checker ~(:schematron-instance sam) ~(:outer-arg-name sam))])
-                                schematron-args))
-          new-arg-list (letify (map
-                              (fn [sm]
-                                (if (schematronned? sm)
-                                  [(:outer-arg-name sm) :- `(.nonintrusive_schema ~(:schematron-instance sm))]
-                                  [(:arg-name sm)])) arg-infos))
-          schematron-lets (letify (map (fn [s] [(:schematron-instance s) (:eval-for-schematron s)]) schematron-args))]
+          schematron-args (filter t/schematronned? arg-infos)
+          restore-orig-args (flatmap-to-vector (juxt :arg-name call-wrap-with-checker) schematron-args)
+          new-arg-list (flatmap-to-vector (fn [sm]
+                                            (if (t/schematronned? sm)
+                                              (apply-nonintrusive-schema sm)
+                                              [(:arg-name sm)])) arg-infos)
+          schematron-lets (flatmap-to-vector (juxt :schematron-instance :eval-for-schematron) schematron-args)]
       `(let ~schematron-lets
          (schema.core/defn ~@before-arg-list ~new-arg-list
            (let ~restore-orig-args
              ~@body))))
     ))
-(comment (let [tron1 (subject/Delay s/Str)]
-           (schema.core/defn fn-name [a-foo :- (.nonintrusive-schema tron1)]
-             (let [a (.wrap-with-checker tron1 a-foo)]
-               "Do stuff"
-               (println @a)))))
 
 ;; need to implement Delay
 (defrecord Delaytron [inner-type]
@@ -57,4 +57,3 @@
     (delay (schema.core/validate (:inner-type this) (deref value)))))
 
 (schema.core/defn Delay [inner] (->Delaytron inner))
-
