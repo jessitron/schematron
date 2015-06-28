@@ -14,6 +14,11 @@
 (schema.core/defn apply-nonintrusive-schema [sam :- t/SchematronnedArg]
   [(:outer-arg-name sam) :- `(.nonintrusive_schema ~(:schematron-instance sam))])
 
+(schema.core/defn apply-nonintrusive-return-schema [sam :- t/SchematronnedArg]
+  [(:arg-name sam) :- `(.nonintrusive_schema ~(:schematron-instance sam))])
+
+(clojure.core/defn printing [a] (println a) a)
+
 (schema.core/defn conditionally [pred apply-if-yes apply-if-no]
   (fn [a]
     ((if (pred a)
@@ -41,16 +46,26 @@
           new-arg-list (flatmap-to-vector (conditionally
                                             t/schematronned?
                                             apply-nonintrusive-schema
-                                            (comp vec :arg-name)) arg-infos)
-          schematron-lets (flatmap-to-vector (juxt :schematron-instance :eval-for-schematron) schematron-args)
-          return-wrapper identity
-          name-etc before-arg-list
-          result-sym (gensym "result")]
-      `(let ~schematron-lets
-         (schema.core/defn ~@name-etc ~new-arg-list
-           (let ~restore-orig-args
-             (let [~result-sym ~@body]
-               (~return-wrapper ~result-sym))))))
+                                            (comp vector :arg-name)) arg-infos)
+          name-etc-infos (process-clownface-schematized-args before-arg-list)
+          _ (println "NEI" name-etc-infos)
+          name-etc (flatmap-to-vector (conditionally t/schematronned?
+                                                     apply-nonintrusive-return-schema
+                                                     (comp vector :arg-name)) name-etc-infos)
+          _ (println "NE" name-etc)
+          result-sym (gensym "result")
+          return-schematron (filter t/schematronned? name-etc-infos)
+          schematron-lets (flatmap-to-vector (juxt :schematron-instance :eval-for-schematron) (concat return-schematron schematron-args))
+          _ (println "RS" return-schematron)
+          return-wrapper (if (seq return-schematron)
+                           ['.wrap-with-checker (:schematron-instance (first return-schematron))]
+                           [identity])
+          ]
+      (printing `(let ~schematron-lets
+                   (schema.core/defn ~@name-etc ~new-arg-list
+                     (let ~restore-orig-args
+                       (let [~result-sym ~@body]
+                         (~@return-wrapper ~result-sym)))))))
     ))
 
 ;; need to implement Delay

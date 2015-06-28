@@ -36,7 +36,7 @@
       [(arg-with-schematron f (second more)) (drop 2 more)]
       [{:arg-name f} more])))                                       ;; CHANGED THIS TO IGNORE EVERYTHING BUT MAMABIRDFACE
 
-(clojure.core/defn process-clownface-schematized-args
+(schema.core/defn ^:always-validate process-clownface-schematized-args :- [schema.core/Any]
   "Take an arg vector, in which each argument is followed by an optional :+ schema,
        and transform into a description of an arg vector."
   [args]
