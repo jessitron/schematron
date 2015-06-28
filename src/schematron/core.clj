@@ -42,11 +42,15 @@
                                             t/schematronned?
                                             apply-nonintrusive-schema
                                             (comp vec :arg-name)) arg-infos)
-          schematron-lets (flatmap-to-vector (juxt :schematron-instance :eval-for-schematron) schematron-args)]
+          schematron-lets (flatmap-to-vector (juxt :schematron-instance :eval-for-schematron) schematron-args)
+          return-wrapper identity
+          name-etc before-arg-list
+          result-sym (gensym "result")]
       `(let ~schematron-lets
-         (schema.core/defn ~@before-arg-list ~new-arg-list
+         (schema.core/defn ~@name-etc ~new-arg-list
            (let ~restore-orig-args
-             ~@body))))
+             (let [~result-sym ~@body]
+               (~return-wrapper ~result-sym))))))
     ))
 
 ;; need to implement Delay
