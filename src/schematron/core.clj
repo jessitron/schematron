@@ -7,6 +7,9 @@
   (nonintrusive-schema [this])
   (wrap-with-checker [this value]))
 
+(clojure.core/defn letify [pairs]
+  (vec (apply concat pairs)))
+
 (defmacro defn
   "Like schema/defn, except in addition to :- for schemas that are checked at call-time,
    you can use :+ to designate a specialized schema
@@ -22,17 +25,19 @@
   [& defn-args]
   (let [[before-arg-list [arg-list & body]] (split-with (complement vector?) defn-args)
         _ (when (nil? arg-list) (throw (ex-info "can't find arg list. Multi-arity not supported, yo" {:before before-arg-list})))]
-    (let [schematron-args (process-clownface-schematized-args arg-list)
-          restore-orig-args (vec (apply concat
-                                           (map
-                                             (fn [sam]
-                                               [(:arg-name sam)
-                                                `(.wrap-with-checker ~(:schematron-instance sam) ~(:outer-arg-name sam))])
-                                             schematron-args)))
+    (let [arg-infos (process-clownface-schematized-args arg-list)
+          _ (println "ARGS: " arg-infos)
+          schematron-args (filter :schematron-instance arg-infos)
+          restore-orig-args (letify
+                              (map
+                                (fn [sam]
+                                  [(:arg-name sam)
+                                   `(.wrap-with-checker ~(:schematron-instance sam) ~(:outer-arg-name sam))])
+                                schematron-args))
           _ (println "QAH: " schematron-args)
           _ (println "QAH: " restore-orig-args)
-          new-arg-list '[foo]
-          schematron-lets '[doo :ddd]
+          new-arg-list (vec (map (fn [sam] (or (:outer-arg-name sam) (:arg-name sam))) arg-infos))
+          schematron-lets (letify (map (fn [sam] [(:schematron-instance sam) (:eval-for-schematron sam)]) schematron-args))
          ]
       `(let ~schematron-lets
          (schema.core/defn ~@before-arg-list ~new-arg-list
