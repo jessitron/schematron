@@ -68,7 +68,7 @@
                          (~@return-wrapper ~result-sym)))))))
     ))
 
-;; need to implement Delay
+;; Delay
 (defrecord Delaytron [inner-type]
   Schematron
   (nonintrusive-schema [_] clojure.lang.Delay)
@@ -76,3 +76,12 @@
     (delay (schema.core/validate (:inner-type this) (deref value)))))
 
 (schema.core/defn Delay [inner] (->Delaytron inner))
+
+;; Lazy Sequence
+(defrecord LazySequencetron [inner-type]
+  Schematron
+  (nonintrusive-schema [_] clojure.lang.LazySeq)
+  (wrap-with-checker [this value]
+    (map (partial schema.core/validate (:inner-type this)) value)))
+
+(clojure.core/defn LazySeq [inner] (->LazySequencetron inner))

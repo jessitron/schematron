@@ -50,3 +50,12 @@
                   (delay n))
     (is (= 4 (deref (gimme 4))))))
 
+(deftest lazy-sequence-return-value
+  (subject/defn lazy-method :+ (subject/LazySeq s/Str) [& args]
+    (map identity args))
+  (testing "not realized when it returns"
+    (is (not (realized? (lazy-method :foo :bar)))))
+  (testing "throws after realization"
+    ;; there's a function to fully evaluate the seq but I can't remember
+    (is (thrown? ExceptionInfo
+                 (println (lazy-method "good" "okay" :bad))))))
