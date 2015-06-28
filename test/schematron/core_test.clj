@@ -18,9 +18,9 @@
 
 ;; crucial to-do: have the validate happen against a schema that will print the line number in the error message
 
-(deftest wrapping-schemas
-         (testing "Wrapping schemas delay checks"
-                  (let [delayed-string (delay "banana")]
-                    (subject/defn verify-not-realized-yet [d :+ (subject/Delay s/Str)]
-                                  (is (not (realized? delayed-string))))
-                    (verify-not-realized-yet delayed-string))))
+(comment (deftest wrapping-schemas
+           (testing "Wrapping schemas delay checks"
+             (let [delayed-string (delay "banana")]
+               (subject/defn verify-not-realized-yet [d :+ (subject/Delay s/Str)]
+                             (is (not (realized? delayed-string))))
+               (verify-not-realized-yet delayed-string)))))
