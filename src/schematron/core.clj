@@ -1,14 +1,13 @@
 (ns schematron.core
-  (:require [schematron.utils :refer [process-clownface-schematized-args]]
+  (:require [schematron.utils :refer [process-clownface-schematized-args
+                                      letify
+                                      schematronned?]]
             [schema.core]))
 
 
 (defprotocol Schematron
   (nonintrusive-schema [this])
   (wrap-with-checker [this value]))
-
-(clojure.core/defn letify [pairs]
-  (vec (apply concat pairs)))
 
 (defmacro defn
   "Like schema/defn, except in addition to :- for schemas that are checked at call-time,
@@ -27,7 +26,7 @@
         _ (when (nil? arg-list) (throw (ex-info "can't find arg list. Multi-arity not supported, yo" {:before before-arg-list})))]
     (let [arg-infos (process-clownface-schematized-args arg-list)
           _ (println "ARGS: " arg-infos)
-          schematron-args (filter :schematron-instance arg-infos)
+          schematron-args (filter schematronned? arg-infos)
           restore-orig-args (letify
                               (map
                                 (fn [sam]
@@ -36,8 +35,13 @@
                                 schematron-args))
           _ (println "QAH: " schematron-args)
           _ (println "QAH: " restore-orig-args)
-          new-arg-list (vec (map (fn [sam] (or (:outer-arg-name sam) (:arg-name sam))) arg-infos))
-          schematron-lets (letify (map (fn [sam] [(:schematron-instance sam) (:eval-for-schematron sam)]) schematron-args))
+          new-arg-list (letify (map
+                              (fn [sm]
+                                (if (schematronned? sm)
+                                  [(:outer-arg-name sm) :- `(.nonintrusive_schema ~(:schematron-instance sm))]
+                                  [(:arg-name sm)])) arg-infos))
+          schematron-lets (letify (map (fn [s] [(:schematron-instance s) (:eval-for-schematron s)]) schematron-args))
+        _ (println "nal: " new-arg-list)
          ]
       `(let ~schematron-lets
          (schema.core/defn ~@before-arg-list ~new-arg-list
