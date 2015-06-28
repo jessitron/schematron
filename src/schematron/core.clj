@@ -38,10 +38,10 @@
     (let [arg-infos (process-clownface-schematized-args arg-list)
           schematron-args (filter t/schematronned? arg-infos)
           restore-orig-args (flatmap-to-vector (juxt :arg-name call-wrap-with-checker) schematron-args)
-          new-arg-list (flatmap-to-vector (fn [sm]
-                                            (if (t/schematronned? sm)
-                                              (apply-nonintrusive-schema sm)
-                                              [(:arg-name sm)])) arg-infos)
+          new-arg-list (flatmap-to-vector (conditionally
+                                            t/schematronned?
+                                            apply-nonintrusive-schema
+                                            (comp vec :arg-name)) arg-infos)
           schematron-lets (flatmap-to-vector (juxt :schematron-instance :eval-for-schematron) schematron-args)]
       `(let ~schematron-lets
          (schema.core/defn ~@before-arg-list ~new-arg-list
