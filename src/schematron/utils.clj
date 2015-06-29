@@ -1,26 +1,14 @@
 (ns schematron.utils
-  (:require [schema.core]))
+  (:require [schema.core]
+            [schematron.schemas :as t]))
 
-(def ^:const SCHEMATRON_BIRDFACE_SYMBOL :+)                 ;; it's a mama bird. Or a clownface.
-(def ^:const SCHEMATRON_METADATA_KEY :schematron)
+(def ^:const SCHEMATRON_BIRDFACE_SYMBOL :+)
 
-
-;; copied and modified from utils.schema
-
-;;;;;;;
-;; Helpers: stolen bits of schema.macros
-
-
-(schema.core/defschema SchematronnedArg {:arg-name schema.core/Symbol
-                                         :schematron-instance schema.core/Symbol
-                                         :outer-arg-name schema.core/Symbol
-                                         :eval-for-schematron schema.core/Any})
 
 (clojure.core/defn flatmap-to-vector [f c]
   (vec (apply concat (map f c))))
-(clojure.core/defn schematronned? [arg-info] (nil? (schema.core/check SchematronnedArg arg-info)))
 
-(schema.core/defn arg-with-schematron :- SchematronnedArg [arg-name schematron]
+(schema.core/defn arg-with-schematron :- t/SchematronnedArg [arg-name schematron]
   {:arg-name arg-name
    :eval-for-schematron schematron
    :schematron-instance (gensym (str arg-name "-st"))
@@ -45,3 +33,21 @@
       out
       (let [[arg more] (extract-clownface-schematized-element in)]
         (recur more (conj out arg))))))
+
+
+(schema.core/defn call-wrap-with-checker [sam :- t/SchematronnedArg]
+  `(.wrap-with-checker ~(:schematron-instance sam) ~(:outer-arg-name sam)))
+
+(schema.core/defn apply-nonintrusive-schema [sam :- t/SchematronnedArg]
+  [(:outer-arg-name sam) :- `(.nonintrusive_schema ~(:schematron-instance sam))])
+
+(schema.core/defn apply-nonintrusive-return-schema [sam :- t/SchematronnedArg]
+  [(:arg-name sam) :- `(.nonintrusive_schema ~(:schematron-instance sam))])
+
+(clojure.core/defn printing [a] (println a) a)
+
+(schema.core/defn conditionally [pred apply-if-yes apply-if-no]
+  (fn [a]
+    ((if (pred a)
+       apply-if-yes
+       apply-if-no) a)))
