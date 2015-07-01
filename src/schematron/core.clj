@@ -63,3 +63,24 @@
     (map (partial schema.core/validate (:inner-type this)) value)))
 
 (clojure.core/defn LazySeq [inner] (->LazySequencetron inner))
+
+;; single-arity function
+(defrecord Functiontron [parameter-schemas return-schema]
+  Schematron
+  (nonintrusive-schema [_] (schema.core/make-fn-schema return-schema [[parameter-schemas]]))
+  (wrap-with-checker [this value]
+    (fn [& args]
+      (doall (map (partial apply schema.core/validate) (map vector (:parameter-schemas this) args)))
+      (schema.core/validate (:return-schema this) (apply value args)))))
+
+(clojure.core/defn Fn
+  "delays the schema checks around a function until it's called.
+  Usage:
+  (schematron.core/Fn param-schema param-schema :=> return-schema)
+  where there can be any number of param-schemas, and the :=> keyword
+  is optional.
+  " [& args]
+  (let [return-schema (last args)
+        parameter-schemas (filter (comp not keyword?) (drop-last args))]
+    (->Functiontron parameter-schemas return-schema))
+  )

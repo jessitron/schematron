@@ -59,3 +59,19 @@
     ;; there's a function to fully evaluate the seq but I can't remember
     (is (thrown? ExceptionInfo
                  (println (lazy-method "good" "okay" :bad))))))
+
+(deftest what-about-functions
+  (let [sum-of-strings (fn [a b] (str (+ a b)))]
+    (subject/defn takes-a-fn :- s/Str [f :+ (subject/Fn s/Num s/Num :=> s/Str)]
+                  (f 4 5))
+    (testing "valid case"
+      (is (= "9" (takes-a-fn sum-of-strings))))
+    (testing "wrong stuff passed in"
+      (subject/defn calls-it-wrong :- s/Str [f :+ (subject/Fn s/Num s/Num :=> s/Str)]
+                    (f 4 "five"))
+      (is (thrown? ExceptionInfo
+                   (calls-it-wrong sum-of-strings))))
+    (testing "wrong stuff comes out"
+      (is (thrown? ExceptionInfo
+                   (takes-a-fn +))))))
+
